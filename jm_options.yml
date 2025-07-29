@@ -1,0 +1,26 @@
+client:
+  postman:
+    meta_data:
+      # proxies: 代理配置，默认是 system，表示使用系统代理。
+      # 以下的写法都可以:
+      # proxies: null # 不使用代理
+      # proxies: clash
+      # proxies: v2ray
+      # proxies: 127.0.0.1:7890
+      # proxies:
+      #   http: 127.0.0.1:7890
+      #   https: 127.0.0.1:7890
+      proxies: system
+
+download:
+  cache: false # 如果要下载的文件在磁盘上已存在，不用再下一遍了吧？默认为true
+
+dir_rule: # 文件夹规则配置，决定图片文件存放在你的电脑上的哪个文件夹
+  base_dir: ./tmp/cache
+
+plugins:
+  after_photo:
+    - plugin: img2pdf
+      kwargs:
+        pdf_dir: ./tmp/pdfs
+        filename_rule: Aname
