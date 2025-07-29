@@ -11,10 +11,9 @@ for pl in tmp:
         PDF_DIR = pl.get("kwargs", {}).get("pdf_dir")
         break
 del tmp
-tmp_pach = path.join(PDF_DIR, "..")
-if not path.exists(tmp_pach):
-    mkdir(tmp_pach)
-del tmp_pach
+TMP_PATH = path.join(PDF_DIR, "..")
+if not path.exists(TMP_PATH):
+    mkdir(TMP_PATH)
 
 
 def download_jm_as_pdf(id: str):

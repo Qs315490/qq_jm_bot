@@ -1,7 +1,10 @@
 import asyncio
 import json
 import websockets
-from command import command_list
+import os
+from shutil import rmtree
+
+from command import command_list, TMP_PATH
 from func import FileMessage, SendPrivateMessage, SendGroupMessage
 from type import (
     MessageObject,
@@ -12,8 +15,12 @@ from type import (
 )
 
 URI = "ws://192.168.0.2:3001/"
-PRIVATE_IDS = [1811138747]
+PRIVATE_IDS = [1]
 GROUP_IDS = [1]
+
+# 创建用于协调清理任务的全局变量
+cleanup_event = asyncio.Event()
+pending_cleanup = False
 
 
 def command_run(command: str):
@@ -41,9 +48,7 @@ async def chat_msg_handler(event: PrivateMessageEvent):
         return
 
     is_command, command = msg_is_command(event["message"])
-    if not is_command:
-        return
-    if command is None:
+    if not is_command or command is None:
         return
 
     result = command_run(command)
@@ -74,9 +79,7 @@ async def group_msg_handler(event: GroupMessageEvent):
         return
 
     is_command, command = msg_is_command(event["message"])
-    if not is_command:
-        return
-    if command is None:
+    if not is_command or command is None:
         return
 
     result = command_run(command)
@@ -102,6 +105,16 @@ async def event_handler(event: EventBase | Result):
         return
 
     if event.get("post_type") == "message":
+        global pending_cleanup
+        # 只有处理消息前检查是否需要清理
+        if not pending_cleanup:
+            pending_cleanup = True
+            cleanup_event.set()
+
+        # 等待清理任务完成
+        while cleanup_event.is_set():
+            await asyncio.sleep(1)
+
         message_type = event.get("message_type")
         if message_type == "private":
             await chat_msg_handler(event)  # pyright: ignore[reportArgumentType]
@@ -111,10 +124,38 @@ async def event_handler(event: EventBase | Result):
             print("unknown message type")
 
 
+async def cleanup_task():
+    """异步执行文件清理任务"""
+    global pending_cleanup
+    while True:
+        # 等待清理信号
+        await cleanup_event.wait()
+
+        try:
+            # 安全清理临时目录
+            for root, dirs, files in os.walk(TMP_PATH):
+                for name in files:
+                    os.remove(os.path.join(root, name))
+                for name in dirs:
+                    rmtree(os.path.join(root, name), ignore_errors=True)
+            print(f"Cleaned temporary directory: {TMP_PATH}")
+        except Exception as e:
+            print(f"Cleanup error: {e}")
+        finally:
+            # 重置状态
+            cleanup_event.clear()
+            pending_cleanup = False
+
+
 async def main():
     global ws
+
+    # 启动清理任务
+    asyncio.create_task(cleanup_task())
+
     async with websockets.connect(URI) as ws:
         while True:
+            # 等待新消息
             msg = await ws.recv()
             msg_json = json.loads(msg)
             await event_handler(msg_json)
