@@ -24,8 +24,8 @@ services:
         build: ./qq_jm_bot
         volumes:
             - qq_jm_bot:/app/tmp
-        environment:
-            - QQ_JM_BOT_UID=0
+        # environment:
+        #     - HTTPS_PROXY=socks5://127.0.0.1:1080
 
 volumes:
     qq_jm_bot:

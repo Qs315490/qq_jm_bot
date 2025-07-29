@@ -1,13 +1,13 @@
-FROM linuxserver/python:3.12.7
+FROM python:3.12.11-alpine3.22
 LABEL maintainer=qs315490
 
 WORKDIR /app
 
-COPY pyproject.toml,uv.lock,*.py,jm_options.yml .
+COPY pyproject.toml *.py jm_options.yml ./
 
-RUN pip install uv
-RUN uv sync
+RUN /bin/sh -c set -eux; apk add --no-cache uv
+RUN /bin/sh -c set -eux; uv sync
 
 VOLUME /app/tmp
 
-CMD ["python", "main.py"]
+CMD ["uv", "run", "main.py"]
