@@ -1,0 +1,31 @@
+version: "3"
+services:
+    napcat:
+        environment:
+            - NAPCAT_UID=0
+            - NAPCAT_GID=0
+        ports:
+            - 3000:3000
+            - 3001:3001
+            - 6099:6099
+        volumes:
+            - ./config:/app/napcat/config
+            - ./qq:/app/.config/QQ
+            - qq_jm_bot:/app/tmp
+        container_name: napcat
+        restart: unless-stopped
+        image: mlikiowa/napcat-docker:latest
+
+    qq_jm_bot:
+        container_name: qq_jm_bot
+        restart: unless-stopped
+        links:
+            - napcat
+        build: ./qq_jm_bot
+        volumes:
+            - qq_jm_bot:/app/tmp
+        environment:
+            - QQ_JM_BOT_UID=0
+
+volumes:
+    qq_jm_bot:

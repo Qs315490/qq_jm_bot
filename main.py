@@ -14,7 +14,7 @@ from type import (
     Result,
 )
 
-URI = "ws://192.168.0.2:3001/"
+URI = "ws://napcat:3001/"
 PRIVATE_IDS = [1]
 GROUP_IDS = [1]
 
