@@ -47,12 +47,13 @@ def command_jm_parse(command: str):
         return download_jm_as_pdf(id)
 
 
-def command_help():
+def command_help(_):
     return {
-        "text": """"
-            命令列表：
-            jm <id> 下载漫画为pdf格式
-        """
+        "text": 
+"""
+命令列表：
+jm <id> 下载漫画为pdf格式
+"""
     }
 
 
