@@ -1,5 +1,6 @@
 import re
 from os import path, mkdir
+from pathlib import Path
 from sys import platform
 import jmcomic
 
@@ -11,7 +12,7 @@ for pl in tmp:
         PDF_DIR = pl.get("kwargs", {}).get("pdf_dir")
         break
 del tmp
-TMP_PATH = path.join(PDF_DIR, "..")
+TMP_PATH = Path(PDF_DIR).parent
 if not path.exists(TMP_PATH):
     mkdir(TMP_PATH)
 
