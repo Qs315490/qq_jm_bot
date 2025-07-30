@@ -24,6 +24,8 @@ services:
         build: ./qq_jm_bot
         volumes:
             - qq_jm_bot:/app/tmp
+        extra_hosts:
+            - "host.docker.internal:host-gateway"
         # environment:
         #     - HTTPS_PROXY=socks5://127.0.0.1:1080
 
