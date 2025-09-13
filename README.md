@@ -4,7 +4,7 @@
 实现群内快速调用 [JMComic-Crawler-Python](https://github.com/hect0x7/JMComic-Crawler-Python) API下载漫画，并转成 `PDF` 文件发送到群聊
 
 ## 使用方法
-1. 安装依赖
+* 安装依赖
 ```bash
 # 使用 pip 安装依赖, 不一定成功
 pip install -r pyproject.toml
@@ -13,16 +13,16 @@ pip install jmcomic img2pdf websockets
 # 使用 uv 安装依赖
 uv sync
 ```
-2. 修改 `main.py` 中的 `URI` 为你的 OneBot 服务器地址
-3. 修改 `main.py` 中的 `PRIVATE_IDS` QQ号白名单，只有白名单中的QQ号才相应 `/jm` 命令
-4. 修改 `main.py` 中的 `GROUP_IDS` 群号白名单，只有白名单中的群号才相应 `/jm` 命令
-5. 运行 `main.py`
+1. 向 `config.py` 中添加 `URI="ws://napcat:3001/"`, `napcat:3001` 为你的 OneBot 服务器地址
+2. 向 `config.py` 中添加 `PRIVATE_IDS=[10086]`, QQ号白名单，只有白名单中的QQ号才相应 `/jm` 命令
+3. 向 `config.py` 中添加 `GROUP_IDS=[10000]`, 群号白名单，只有白名单中的群号才相应 `/jm` 命令
+4. 运行 `main.py`
 ```bash
 python main.py
 # 使用 uv 运行
 uv run main.py
 ```
-1. 在群内发送 `/jm xxxx` 命令，即可下载并发送漫画到群聊
+在群内发送 `/jm xxxx` 命令，即可下载并发送漫画到群聊
 
 ## 注意事项
 1. 下载漫画需要一定时间，请耐心等待
