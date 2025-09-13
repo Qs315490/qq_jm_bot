@@ -13,7 +13,7 @@ client:
       proxies: system
 
 download:
-  cache: false # 如果要下载的文件在磁盘上已存在，不用再下一遍了吧？默认为true
+  cache: true # 如果要下载的文件在磁盘上已存在，不用再下一遍了吧？默认为true
 
 dir_rule: # 文件夹规则配置，决定图片文件存放在你的电脑上的哪个文件夹
   base_dir: ./tmp/cache

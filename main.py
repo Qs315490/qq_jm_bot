@@ -14,9 +14,16 @@ from type import (
     Result,
 )
 
-URI = "ws://napcat:3001/"
-PRIVATE_IDS = [1]
-GROUP_IDS = [1]
+
+try:
+    import config
+    PRIVATE_IDS = config.PRIVATE_IDS
+    GROUP_IDS = config.GROUP_IDS
+    URI = config.URI
+except ImportError:
+    URI = "ws://napcat:3001/"
+    PRIVATE_IDS = [1]
+    GROUP_IDS = [1]
 
 # 创建用于协调清理任务的全局变量
 cleanup_event = asyncio.Event()
@@ -113,6 +120,7 @@ async def event_handler(event: EventBase | Result):
 
         # 等待清理任务完成
         while cleanup_event.is_set():
+            print("Waiting for cleanup task to complete...")
             await asyncio.sleep(1)
 
         message_type = event.get("message_type")
