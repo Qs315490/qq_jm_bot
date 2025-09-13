@@ -17,10 +17,11 @@ download:
 
 dir_rule: # 文件夹规则配置，决定图片文件存放在你的电脑上的哪个文件夹
   base_dir: ./tmp/cache
+  rule: Bd_Aid_Pindex
 
 plugins:
   after_photo:
     - plugin: img2pdf
       kwargs:
         pdf_dir: ./tmp/pdfs
-        filename_rule: Aname
+        filename_rule: Aid

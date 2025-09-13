@@ -29,7 +29,8 @@ def download_jm_as_pdf(id: str):
         return {"text": e.description}
     if isinstance(result, tuple):
         name = result[0].name
-        file_name = f"{name}.pdf"
+        id = result[0].id
+        file_name = f"{id}.pdf"
         file_path = path.join(PDF_DIR, file_name)
         file_abspath = path.abspath(file_path)
         if platform == "win32":
@@ -58,3 +59,7 @@ jm <id> 下载漫画为pdf格式
 
 
 command_list = {"help": command_help, "jm": command_jm_parse}
+
+if __name__ == "__main__":
+    # TEST
+    download_jm_as_pdf("485647")
