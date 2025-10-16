@@ -80,8 +80,12 @@ class Result(BaseModel):
     "发送状态"
     retcode: int
     "返回码"
-    data: dict
+    data: dict | None = None
     "返回数据"
+    message:str | None = None
+    "返回信息"
+    wording:str | None = None
+    "错误信息"
     echo: str
     "自定义标识"
 

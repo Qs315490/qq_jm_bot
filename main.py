@@ -124,6 +124,13 @@ async def event_handler(event: Event):
 
 def parse_event(data: dict) -> Event:
     """根据数据内容自动判断事件类型"""
+
+    if data.get("echo") is not None:
+        try:
+            return Result(**data)
+        except ValidationError:
+            pass
+
     # 先创建基础事件对象
     base_event = BaseEvent(**data)
 
@@ -141,11 +148,6 @@ def parse_event(data: dict) -> Event:
                 return GroupMessageEvent(**data)
             except ValidationError:
                 pass
-    elif data.get("echo") is not None:
-        try:
-            return Result(**data)
-        except ValidationError:
-            pass
     # 如果无法匹配具体类型，返回基础事件
     return base_event
 
