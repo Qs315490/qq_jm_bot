@@ -9,6 +9,7 @@ wheels/
 # Virtual environments
 .venv
 
+# JM_DL files
 tmp/
 
 config.py

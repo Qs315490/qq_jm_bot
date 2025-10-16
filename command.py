@@ -2,7 +2,11 @@ import re
 from os import path, mkdir
 from pathlib import Path
 from sys import platform
+from collections.abc import Callable
+
 import jmcomic
+
+from type import CommandResult, CommandResultFile
 
 JM_OPTIONS = jmcomic.create_option_by_file("jm_options.yml")
 PDF_DIR = "./tmp/pdfs"
@@ -17,7 +21,7 @@ if not path.exists(TMP_PATH):
     mkdir(TMP_PATH)
 
 
-def download_jm_as_pdf(id: str):
+def download_jm_as_pdf(id: str) -> CommandResult:
     try:
         result = jmcomic.download_album(id, JM_OPTIONS)
     except (
@@ -26,7 +30,7 @@ def download_jm_as_pdf(id: str):
     ) as e:
         # TODO: send message to user
         print(e)
-        return {"text": e.description}
+        return CommandResult(text=e.description)
     if isinstance(result, tuple):
         name = result[0].name
         id = result[0].id
@@ -35,10 +39,11 @@ def download_jm_as_pdf(id: str):
         file_abspath = path.abspath(file_path)
         if platform == "win32":
             file_abspath = file_abspath.replace("\\", "/")
-        return {
-            "text": name,
-            "file": (file_name, f"file://{file_abspath}"),
-        }
+        return CommandResult(
+            text=name,
+            file=CommandResultFile(name=file_name, path=f"file://{file_abspath}"),
+        )
+    return CommandResult(text="下载失败，未知错误")
 
 
 def command_jm_parse(command: str):
@@ -46,19 +51,19 @@ def command_jm_parse(command: str):
     if match:
         id = match.group(1)
         return download_jm_as_pdf(id)
+    return CommandResult(text="命令格式错误")
 
 
 def command_help(_):
-    return {
-        "text": 
-"""
+    return CommandResult(
+        text="""
 命令列表：
-jm <id> 下载漫画为pdf格式
+/jm <id> 下载漫画为pdf格式
 """
-    }
+    )
 
 
-command_list = {"help": command_help, "jm": command_jm_parse}
+command_list:dict[str, Callable[[str], CommandResult]] = {"help": command_help, "jm": command_jm_parse}
 
 if __name__ == "__main__":
     # TEST

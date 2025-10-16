@@ -7,5 +7,6 @@ requires-python = ">=3.12"
 dependencies = [
     "img2pdf>=0.6.1",
     "jmcomic>=2.6.4",
+    "pydantic>=2.12.2",
     "websockets>=15.0.1",
 ]

@@ -1,23 +1,23 @@
-from typing import TypedDict, NotRequired
+from pydantic import BaseModel
 
 
-class MessageData(TypedDict):
+class MessageData(BaseModel):
     """接收事件中message的data字段"""
 
-    text: str
-    file: str
-    qq: int
-    id: int
+    text: str | None = None
+    file: str | None = None
+    qq: int | None = None
+    id: int | None = None
 
 
-class MessageObject(TypedDict):
+class MessageObject(BaseModel):
     """接收事件中message字段"""
 
     type: str
     data: MessageData
 
 
-class FriendSender(TypedDict):
+class FriendSender(BaseModel):
     """接收事件中sender字段"""
 
     user_id: int
@@ -26,11 +26,11 @@ class FriendSender(TypedDict):
     "发送者昵称"
     sex: str
     "发送者性别"
-    group_id: NotRequired[int]
+    group_id: int | None = None
     "群临时会话群号（可选）"
 
 
-class EventBase(TypedDict):
+class BaseEvent(BaseModel):
     """接收事件"""
 
     time: int
@@ -41,7 +41,7 @@ class EventBase(TypedDict):
     "收到事件的机器人 QQ 号"
 
 
-class PrivateMessageEvent(EventBase):
+class PrivateMessageEvent(BaseEvent):
     """接收私聊消息事件"""
 
     message_type: str
@@ -58,9 +58,9 @@ class PrivateMessageEvent(EventBase):
     "原始消息内容"
     font: int
     "字体"
-    target_id: NotRequired[int]
+    target_id: int | None = None
     "临时会话目标 QQ 号（可选）"
-    temp_source: NotRequired[int]
+    temp_source: int | None = None
     "临时会话来源（可选）"
     sender: dict
     "发送者信息"
@@ -73,7 +73,7 @@ class GroupMessageEvent(PrivateMessageEvent):
     "群号"
 
 
-class Result(TypedDict):
+class Result(BaseModel):
     "发送消息的返回值"
 
     status: str
@@ -84,3 +84,12 @@ class Result(TypedDict):
     "返回数据"
     echo: str
     "自定义标识"
+
+type Event = BaseEvent | Result
+
+class CommandResultFile(BaseModel):
+    name: str
+    path: str
+class CommandResult(BaseModel):
+    text: str | None = None
+    file: CommandResultFile | None = None
