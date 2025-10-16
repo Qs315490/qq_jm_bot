@@ -194,6 +194,7 @@ async def main():
                 await event_handler(parse_event(msg_json))
     except websockets.exceptions.InvalidMessage:
         print("Invalid message received from server.")
+        await asyncio.sleep(5)
 
 
 if __name__ == "__main__":
