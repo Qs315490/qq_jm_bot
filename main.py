@@ -182,13 +182,16 @@ async def main():
     # 启动清理任务 （每6小时执行一次）
     Timer(6 * 60 * 60, cleanup_task).start()
 
-    async with websockets.connect(URI) as ws:
-        print("Connected to websocket server.")
-        while True:
-            # 等待新消息
-            msg = await ws.recv()
-            msg_json: dict = json.loads(msg)
-            await event_handler(parse_event(msg_json))
+    try:
+        async with websockets.connect(URI) as ws:
+            print("Connected to websocket server.")
+            while True:
+                # 等待新消息
+                msg = await ws.recv()
+                msg_json: dict = json.loads(msg)
+                await event_handler(parse_event(msg_json))
+    except websockets.exceptions.InvalidMessage:
+        print("Invalid message received from server.")
 
 
 if __name__ == "__main__":
