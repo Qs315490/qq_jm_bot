@@ -19,6 +19,7 @@ services:
     qq_jm_bot:
         container_name: qq_jm_bot
         restart: unless-stopped
+        tty: true
         links:
             - napcat
         build: ./qq_jm_bot
