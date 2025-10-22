@@ -20,6 +20,8 @@ services:
         container_name: qq_jm_bot
         restart: unless-stopped
         tty: true
+        ports:
+            - 5678:5678
         links:
             - napcat
         build: ./qq_jm_bot

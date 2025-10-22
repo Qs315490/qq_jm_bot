@@ -10,4 +10,4 @@ RUN /bin/sh -c set -eux; uv sync
 
 VOLUME /app/tmp
 
-CMD [".venv/bin/python", "main.py"]
+CMD [".venv/bin/python", "-m", "debugpy", "--listen", "0.0.0.0:5678", "main.py"]
