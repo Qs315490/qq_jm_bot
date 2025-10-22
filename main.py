@@ -19,17 +19,18 @@ from type import (
     CommandResult,
 )
 
-
+URI = "ws://napcat:3001/"
 try:
     import config
 
     PRIVATE_IDS = config.PRIVATE_IDS
     GROUP_IDS = config.GROUP_IDS
-    URI = config.URI
+    URI = getattr(config, "URI", URI)
+    TOKEN = getattr(config, "TOKEN", None)
 except ImportError:
-    URI = "ws://napcat:3001/"
-    PRIVATE_IDS = [1]
-    GROUP_IDS = [1]
+    PRIVATE_IDS = []
+    GROUP_IDS = []
+    TOKEN = None
 
 # 创建用于协调清理任务的全局变量
 cleanup_event = asyncio.Event()
@@ -74,7 +75,7 @@ async def msg_handler(event: Event):
     is_command, command = msg_is_command(event.message)
     if not is_command or command is None:
         return
-    
+
     print(f"Received command: {command} from user: {event.user_id}")
 
     result = command_run(command)
@@ -178,23 +179,29 @@ async def cleanup_task():
         cleanup_event.clear()
 
 
-async def main():
+async def ws_handler(websocket_uri: str, token: str | None = None):
     global ws
+    if token is not None:
+        websocket_uri = f"{websocket_uri}/?access_token={token}"
+    async with websockets.connect(websocket_uri) as ws:
+        print("Connected to websocket server.")
+        while True:
+            # 等待新消息
+            msg = await ws.recv()
+            msg_json: dict = json.loads(msg)
+            await event_handler(parse_event(msg_json))
 
+
+async def main():
     # 启动清理任务 （每6小时执行一次）
     Timer(6 * 60 * 60, cleanup_task).start()
 
-    try:
-        async with websockets.connect(URI) as ws:
-            print("Connected to websocket server.")
-            while True:
-                # 等待新消息
-                msg = await ws.recv()
-                msg_json: dict = json.loads(msg)
-                await event_handler(parse_event(msg_json))
-    except websockets.exceptions.InvalidMessage:
-        print("Invalid message received from server.")
-        await asyncio.sleep(5)
+    while True:
+        try:
+            await ws_handler(URI, TOKEN)
+        except websockets.exceptions.InvalidMessage as e:
+            print(f"Websocket error: {e}")
+            await asyncio.sleep(5)
 
 
 if __name__ == "__main__":
