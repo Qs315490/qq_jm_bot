@@ -28,9 +28,14 @@ def download_jm_as_pdf(id: str) -> CommandResult:
         jmcomic.PartialDownloadFailedException,
         jmcomic.RequestRetryAllFailException,
     ) as e:
-        # TODO: send message to user
         print(e)
-        return CommandResult(text=e.description)
+        return CommandResult(text="下载失败，请稍后再试")
+    except jmcomic.MissingAlbumPhotoException as e:
+        print(e)
+        return CommandResult(text="请求的本子不存在！")
+    except Exception as e:
+        print(e)
+        return CommandResult(text=str(e))
     if isinstance(result, tuple):
         name = result[0].name
         id = result[0].id
