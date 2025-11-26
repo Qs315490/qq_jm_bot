@@ -1,22 +1,22 @@
 import asyncio
 import json
-import websockets
 import os
 from shutil import rmtree
 from threading import Timer
 
+import websockets
 from pydantic import ValidationError
 
-from command import command_list, TMP_PATH
-from func import FileMessage, SendPrivateMessage, SendGroupMessage
+from command import TMP_PATH, command_list
+from func import FileMessage, SendGroupMessage, SendPrivateMessage
 from type import (
+    BaseEvent,
+    CommandResult,
+    Event,
+    GroupMessageEvent,
     MessageObject,
     PrivateMessageEvent,
-    GroupMessageEvent,
-    BaseEvent,
-    Event,
     Result,
-    CommandResult,
 )
 
 URI = "ws://napcat:3001/"
@@ -199,7 +199,7 @@ async def main():
     while True:
         try:
             await ws_handler(URI, TOKEN)
-        except websockets.exceptions.InvalidMessage as e:
+        except (websockets.exceptions.InvalidMessage, ConnectionRefusedError) as e:
             print(f"Websocket error: {e}")
             await asyncio.sleep(5)
 

@@ -1,8 +1,8 @@
 import re
-from os import path, mkdir
+from collections.abc import Callable
+from os import mkdir, path
 from pathlib import Path
 from sys import platform
-from collections.abc import Callable
 
 import jmcomic
 
@@ -68,7 +68,10 @@ def command_help(_):
     )
 
 
-command_list:dict[str, Callable[[str], CommandResult]] = {"help": command_help, "jm": command_jm_parse}
+command_list: dict[str, Callable[[str], CommandResult]] = {
+    "help": command_help,
+    "jm": command_jm_parse,
+}
 
 if __name__ == "__main__":
     # TEST
