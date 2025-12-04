@@ -3,6 +3,7 @@ import json
 import os
 from shutil import rmtree
 from threading import Timer
+from traceback import print_exc
 
 import websockets
 from pydantic import ValidationError
@@ -199,8 +200,8 @@ async def main():
     while True:
         try:
             await ws_handler(URI, TOKEN)
-        except (websockets.exceptions.InvalidMessage, ConnectionRefusedError) as e:
-            print(f"Websocket error: {e}")
+        except Exception:
+            print_exc()
             await asyncio.sleep(5)
 
 
