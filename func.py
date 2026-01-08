@@ -1,3 +1,17 @@
+from collections.abc import Callable
+from threading import Timer
+
+
+def timer_func(time: float=1):
+    def wrapper(func: Callable):
+        def inner_wrapper(*args, **kwargs):
+            result = func(*args, **kwargs)
+            Timer(time, func, args, kwargs).start()
+            return result
+        return inner_wrapper
+    return wrapper
+
+
 class MessageBody(dict):
     def __init__(self, type: str, data: dict | str):
         super().__init__()
@@ -88,7 +102,27 @@ class SendGroupMessage(SendPrivateMessage):
         reply_msg_id: int | None = None,
         echo: str | None = None,
     ):
-        super().__init__(message, group_id, reply_msg_id, echo)
+        super().__init__(message, 0, reply_msg_id, echo)
         self["action"] = "send_group_msg"
         self["params"].pop("user_id")
         self["params"].update({"group_id": group_id})
+
+
+class SetOnlineStatus(dict):
+    "设置在线状态"
+
+    def __init__(
+        self,
+        status: int = 0,
+        ext_status: int = 0,
+        battery_status: int = 100,
+        echo: str = "status",
+    ):
+        super().__init__()
+        self["action"] = "set_online_status"
+        self["params"] = {
+            "status": status,
+            "ext_status": ext_status,
+            "battery_status": battery_status,
+        }
+        self["echo"] = echo

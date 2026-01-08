@@ -1,21 +1,30 @@
 import asyncio
 import json
 import os
+from http.client import HTTPConnection, HTTPException
 from shutil import rmtree
-from threading import Timer
+from threading import Lock
 from traceback import print_exc
 
 import websockets
 from pydantic import ValidationError
 
 from command import TMP_PATH, command_list
-from func import FileMessage, SendGroupMessage, SendPrivateMessage
+from func import (
+    FileMessage,
+    SendGroupMessage,
+    SendPrivateMessage,
+    SetOnlineStatus,
+    timer_func,
+)
 from type import (
     BaseEvent,
     CommandResult,
     Event,
     GroupMessageEvent,
+    HeartbeatEvent,
     MessageObject,
+    MetaEvent,
     PrivateMessageEvent,
     Result,
 )
@@ -34,8 +43,8 @@ except ImportError:
     TOKEN = None
 
 # 创建用于协调清理任务的全局变量
-cleanup_event = asyncio.Event()
-command_running = asyncio.Event()
+command_cleanup_running = Lock()
+is_online: bool = False
 
 
 def command_run(command: str) -> CommandResult | None:
@@ -78,7 +87,6 @@ async def msg_handler(event: Event):
         return
 
     print(f"Received command: {command} from user: {event.user_id}")
-
     result = command_run(command)
     if result is None:
         return
@@ -108,20 +116,38 @@ async def msg_handler(event: Event):
         await ws.send(send_data_json)
 
 
+def meta_event_handler(event: MetaEvent):
+    match event.meta_event_type:
+        case "heartbeat":
+            assert isinstance(event, HeartbeatEvent)
+            # 心跳事件，可以在这里处理心跳逻辑
+            global is_online  # noqa: PLW0603
+            is_online = event.status.online
+
+
+def result_handler(event: Result):
+    if event.retcode != 0:
+        print(f"Action '{event.echo}' failed <{event.retcode}>: {event.message}")
+        return
+
+    match event.echo:
+        case _:
+            pass
+
+
 async def event_handler(event: Event):
     if isinstance(event, Result):
-        # TODO: echo handler
+        result_handler(event)
+        return
+
+    if isinstance(event, MetaEvent):
+        meta_event_handler(event)
         return
 
     if event.post_type == "message":
         # 等待清理任务完成
-        if cleanup_event.is_set():
-            print("Cleanup task is running. Waiting to resume command processing.")
-            await cleanup_event.wait()
-            print("Cleanup task completed. Resuming command processing.")
-        command_running.set()
-        await msg_handler(event)
-        command_running.clear()
+        with command_cleanup_running:
+            await msg_handler(event)
 
 
 def parse_event(data: dict) -> Event:
@@ -137,33 +163,53 @@ def parse_event(data: dict) -> Event:
     base_event = BaseEvent(**data)
 
     # 根据 post_type 判断具体事件类型
-    if base_event.post_type == "message":
-        # 根据 message_type 进一步判断
-        message_type = data.get("message_type")
-        if message_type == "private":
-            try:
-                return PrivateMessageEvent(**data)
-            except ValidationError:
-                pass
-        elif message_type == "group":
-            try:
-                return GroupMessageEvent(**data)
-            except ValidationError:
-                pass
+    match base_event.post_type:
+        case "message":
+            # 根据 message_type 进一步判断
+            message_type = data.get("message_type")
+            if message_type == "private":
+                try:
+                    return PrivateMessageEvent(**data)
+                except ValidationError:
+                    pass
+            elif message_type == "group":
+                try:
+                    return GroupMessageEvent(**data)
+                except ValidationError:
+                    pass
+        case "meta_event":
+            match data.get("meta_event_type"):
+                case "heartbeat":
+                    return HeartbeatEvent(**data)
+            return MetaEvent(**data)
     # 如果无法匹配具体类型，返回基础事件
     return base_event
 
 
-async def cleanup_task():
+async def ws_handler(websocket_uri: str, token: str | None = None):
+    global ws
+    if token is not None:
+        websocket_uri = f"{websocket_uri}/?access_token={token}"
+    async with websockets.connect(websocket_uri) as ws:
+        print("Connected to websocket server.")
+        # 启动自动登录任务
+        await auto_login()
+
+        while True:
+            # 等待新消息
+            msg = await ws.recv()
+            msg_json: dict = json.loads(msg)
+            await event_handler(parse_event(msg_json))
+
+
+# 清理任务 （每6小时执行一次）
+@timer_func(6 * 60 * 60)
+def cleanup_task():
     """异步执行文件清理任务"""
 
     print("Starting cleanup task...")
     # 等待当前命令处理完成
-    if command_running.is_set():
-        print("Command is running. Waiting to complete.")
-        await command_running.wait()
-        print("Command completed. Proceeding with cleanup.")
-    cleanup_event.set()
+    command_cleanup_running.acquire()
 
     try:
         # 安全清理临时目录
@@ -177,25 +223,41 @@ async def cleanup_task():
         print(f"Cleanup error: {e}")
     finally:
         # 重置状态
-        cleanup_event.clear()
+        command_cleanup_running.release()
+
+    print("Cleanup task completed.")
 
 
-async def ws_handler(websocket_uri: str, token: str | None = None):
-    global ws
-    if token is not None:
-        websocket_uri = f"{websocket_uri}/?access_token={token}"
-    async with websockets.connect(websocket_uri) as ws:
-        print("Connected to websocket server.")
-        while True:
-            # 等待新消息
-            msg = await ws.recv()
-            msg_json: dict = json.loads(msg)
-            await event_handler(parse_event(msg_json))
+# 自动登录任务（每15分钟执行一次）
+@timer_func(15 * 60)
+async def auto_login():
+    """自动登录任务"""
+
+    # 如果在线状态为离线，则尝试重新登录
+    if is_online:
+        return
+
+    # 检查网络连接
+    try:
+        http = HTTPConnection("wifi.vivo.com.cn", timeout=5)
+        http.request("GET", "/")
+        response = http.getresponse()
+    except HTTPException as e:
+        print(f"auto_login: {e}")
+        return
+    if 204 != response.getcode():
+        print("auto_login: Network error")
+        return
+
+    print("auto_login: set login status...")
+    # 设置在线状态
+    msg = SetOnlineStatus(status=10, echo="auto_login")
+    await ws.send(json.dumps(msg))
 
 
 async def main():
-    # 启动清理任务 （每6小时执行一次）
-    Timer(6 * 60 * 60, cleanup_task).start()
+    # 启动清理任务
+    cleanup_task()
 
     while True:
         try:

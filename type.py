@@ -41,6 +41,30 @@ class BaseEvent(BaseModel):
     "收到事件的机器人 QQ 号"
 
 
+class MetaEvent(BaseEvent):
+    """元事件"""
+
+    meta_event_type: str
+    "子类型"
+
+
+class Status(BaseModel):
+    "状态"
+
+    online: bool
+    "是否在线"
+    good: bool
+
+
+class HeartbeatEvent(MetaEvent):
+    """心跳事件"""
+
+    status: Status
+    "状态"
+    interval: int
+    "心跳间隔"
+
+
 class PrivateMessageEvent(BaseEvent):
     """接收私聊消息事件"""
 
@@ -82,18 +106,22 @@ class Result(BaseModel):
     "返回码"
     data: dict | None = None
     "返回数据"
-    message:str | None = None
+    message: str | None = None
     "返回信息"
-    wording:str | None = None
+    wording: str | None = None
     "错误信息"
     echo: str
     "自定义标识"
 
-type Event = BaseEvent | Result
+
+type Event = BaseEvent | MetaEvent | Result
+
 
 class CommandResultFile(BaseModel):
     name: str
     path: str
+
+
 class CommandResult(BaseModel):
-    text: str | None = None
+    text: str | dict | None = None
     file: CommandResultFile | None = None
